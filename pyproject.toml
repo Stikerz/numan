@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "numan_python_takehome"
+version = "0.1.0"
+description = ""
+authors = []
+
+[tool.poetry.dependencies]
+python = ">=3.8"
+django = ">=3.2"
+psycopg2-binary = "*"
+pytest = "*"
+python-dotenv = "*"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"

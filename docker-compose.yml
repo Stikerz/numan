@@ -1,0 +1,39 @@
+version: '3'
+
+services:
+  db:
+    image: postgres:10
+    user: ${UID:-1000}:${UID:-1000}
+    stop_signal: SIGINT  # Fast shutdown.
+    environment:
+      POSTGRES_PASSWORD: password
+    volumes:
+      - ./misc/dbdata:/var/lib/postgresql/data:delegated
+  web:
+    # Docker hack to wait until Postgres is up, then run stuff.
+    command: >
+      bash -c "while ! nc -w 1 -z db 5432;
+               do sleep 0.5;
+               done;
+
+               sleep 1;
+               ./manage.py migrate;
+
+               while :;
+               do exec ./manage.py runserver 0.0.0.0:8000;
+               done;
+               "
+    image: "web"
+    user: ${UID:-1000}:${UID:-1000}
+    build: .
+    stop_signal: SIGINT  # The devserver only stops on SIGINT.
+    stdin_open: true
+    tty: true
+    volumes:
+      - .:/code:cached
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      IN_DOCKER: 1
