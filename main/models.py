@@ -1,8 +1,9 @@
-from typing import Any
-from typing import Dict
+from typing import Any, Dict
 
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import EmailValidator
 from django.db import models
+from django_countries.fields import CountryField
 
 
 class User(AbstractUser):
@@ -40,3 +41,23 @@ class BloodTestResults(models.Model):
             "date": self.timestamp,
             "results": self.results,
         }
+
+
+class Lab(models.Model):
+    """Laboratory which run blood tests."""
+
+    name = models.CharField(max_length=128, unique=True)
+    address = models.CharField(max_length=256)
+    address_2 = models.CharField(max_length=256, blank=True)
+    city = models.CharField(max_length=256)
+    post_code = models.CharField(max_length=8)
+    country = CountryField(default="GB", blank_label="(select country)")
+    email = models.CharField(max_length=254, validators=[EmailValidator()])
+    number = models.CharField(max_length=15)
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def country_name(self) -> str:
+        return self.country.name

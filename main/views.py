@@ -1,14 +1,14 @@
-from typing import Any
-from typing import Dict
-from typing import List
+from typing import Any, Dict, List
 
 from django.contrib.auth import get_user_model
-from django.http import HttpResponse
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.views.generic import View
+from rest_framework import status, viewsets
+from rest_framework.response import Response
 
-from .models import BloodTestResults
+from .models import BloodTestResults, Lab
+from .serializers import LabSerializer
 
 
 class APIClass(View):
@@ -48,3 +48,16 @@ class APITestResults(APIClass):
 def index(request) -> HttpResponse:
     """The main index view, for prettiness."""
     return render(request, "index.html")
+
+
+class LabViewSet(viewsets.ViewSet):
+    serializer_class = LabSerializer
+
+    def list(self, request, **kwargs):
+        filters = {"country": kwargs.get("country")}
+        city = self.request.query_params.get("city")
+        if city:
+            filters["city"] = city
+        queryset = Lab.objects.filter(**filters)
+        serializer = LabSerializer(instance=queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

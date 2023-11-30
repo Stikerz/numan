@@ -8,4 +8,9 @@ urlpatterns = [
     path("api/results/", views.APITestResults.as_view(), name="api-results"),
     path("api/geolocation/", views.APIGeolocation.as_view(), name="api-geolocation"),
     path("", views.index, name="index"),
+    path(
+        "api/lab/<country>/",
+        views.LabViewSet.as_view({"get": "list"}),
+        name="api-lab",
+    ),
 ]
