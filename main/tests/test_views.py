@@ -1,4 +1,5 @@
 import json
+from unittest.mock import Mock
 from urllib.parse import urljoin
 
 import pytest
@@ -39,15 +40,6 @@ class SmokeTests(TestCase):
             },
         )
 
-    def test_geolocation(self):
-        response = self.client.get(
-            reverse("main:api-geolocation"), {"ip": "174.19.29.182"}
-        )
-        self.assertEqual(response.status_code, 200)
-        c = json.loads(response.content)["data"]
-        self.assertEqual(c["city"], "Rocky Mount")
-        self.assertEqual(c["country"], "USA")
-
     def test_blood_test_results(self):
         response = self.client.get(reverse("main:api-results"))
         self.assertEqual(response.status_code, 200)
@@ -57,7 +49,7 @@ class SmokeTests(TestCase):
 
 
 @pytest.mark.django_db
-class TestLabViewset:
+class TestLabViewSet:
     client = APIClient()
 
     @pytest.mark.parametrize(
@@ -146,3 +138,51 @@ class TestLabViewset:
         assert response.status_code == status.HTTP_200_OK
         assert len(response.json()) == expected_labs
         assert 2 == Lab.objects.all().count()
+
+
+@pytest.mark.django_db
+class TestGeolocationViewSet:
+    client = APIClient()
+
+    @pytest.mark.parametrize(
+        ("expected_error_message", "ip_query_param"),
+        [
+            (
+                "Error: query parameter 'ip' was not set. Please pass ip address as a query parameter ",
+                "",
+            ),
+            ("ValueError: {} does not appear to be an IPv4 or IPv6 address", "Invalid"),
+        ],
+    )
+    def test_ip_validation(self, expected_error_message, ip_query_param):
+        with pytest.raises(Exception) as err:
+            self.client.get(
+                urljoin(
+                    reverse("main:api-geolocation"), "?ip={}".format(ip_query_param)
+                )
+            )
+        expected_error_message = expected_error_message.format(ip_query_param)
+        assert err.value.args[0] == expected_error_message
+
+    @pytest.mark.parametrize(
+        ("expected_status_code", "mock_return_value"),
+        [
+            (status.HTTP_400_BAD_REQUEST, {"wrong": "values"}),
+            (status.HTTP_200_OK, {"country_name": "USA", "city": "Rocky Mount"}),
+        ],
+    )
+    def test_geolocation(self, mocker, expected_status_code, mock_return_value):
+        mock = Mock()
+        mock.json.return_value = mock_return_value
+        mocker.patch(
+            "main.views.IpGeolocationClient.get_ip_geolocation", return_value=mock
+        )
+
+        response = self.client.get(
+            urljoin(reverse("main:api-geolocation"), "?ip=192.168.2.10")
+        )
+        assert response.status_code == expected_status_code
+        if expected_status_code == status.HTTP_200_OK:
+            data = response.json()
+            assert data.get("city") == "Rocky Mount"
+            assert data.get("country") == "USA"

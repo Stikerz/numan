@@ -1,14 +1,15 @@
 # Numan Python take-home assignment
 This repository contains the Numan Python take-home exercise.
-It is a small Django-based app that deals with blood tests. 
+It is a small Django-based app that deals with blood tests.
 
 There is a model called `BloodTestResults`, which represents a set of tests that the user
 has ordered and which are supposed to be carried out by a lab.
 
-There are two available endpoints at the moment. 
+There are three available endpoints at the moment.
 
 - GET `api/results/`: Returns a list of blood tests for the current user (currently the only user in the database, as there's no authentication)
-- GET `api/geolocation/`: Performs IP-based geolocation (currently a stub) 
+- GET `api/geolocation/`: Performs IP-based geolocation
+- GET `api/lab/<country>/`: Returns a lab by city and country.
 
 Please check the [instructions](/INSTRUCTIONS.md) for this technical challenge to see what are the expected deliverables.
 
@@ -36,6 +37,12 @@ $ docker-compose up
 
 and then visit http://localhost:8000/ in your browser.
 
+⚠️ You will have to add your IP Geolocation API Key to IP_GEOLOCATION_API_KEY environment variable to run docker correctly e.g.
+
+```bash
+$ export IP_GEOLOCATION_API_KEY=*KEY*
+```
+
 > ⚠️ If you get an error about permissions on PostgreSQL data not permitted, run this:
 > ```
 > $ sudo chown -R $(id -u):$(id -g) misc
@@ -57,8 +64,8 @@ $ poetry shell
 $ poetry install --no-root
 ```
 
-The first time you run this you'll first need to run the database migrations and load the initial 
-database entries, using: 
+The first time you run this you'll first need to run the database migrations and load the initial
+database entries, using:
 ```bash
 $ ./manage.py migrate
 $ ./manage.py loaddata initial_data.json
@@ -71,6 +78,12 @@ $ ./manage.py runserver
 ```
 
 and then visit http://localhost:8000/ in your browser.
+
+⚠️ You will have to add your IP Geolocation API Key to IP_GEOLOCATION_API_KEY environment variable to run django correctly e.g.
+
+```bash
+$ export IP_GEOLOCATION_API_KEY=*KEY*
+```
 
 
 ### If you have neither:

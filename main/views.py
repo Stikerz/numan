@@ -1,3 +1,4 @@
+import ipaddress
 from typing import Any, Dict, List
 
 from django.contrib.auth import get_user_model
@@ -7,8 +8,22 @@ from django.views.generic import View
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 
+from .integrations.ip_geolocation import IpGeolocationClient
 from .models import BloodTestResults, Lab
-from .serializers import LabSerializer
+from .serializers import GeolocationSerializer, LabSerializer
+
+
+def validate_ip_address(ip_address: str = None):
+    if not ip_address:
+        raise Exception(
+            "Error: query parameter 'ip' was not set. Please pass ip address as a query parameter "
+        )
+    try:
+        ipaddress.ip_address(ip_address)
+    except ValueError:
+        raise Exception(
+            f"ValueError: {ip_address} does not appear to be an IPv4 or IPv6 address"
+        )
 
 
 class APIClass(View):
@@ -27,14 +42,6 @@ class APIClass(View):
             return JsonResponse(response, status=422)
         else:
             return JsonResponse({"data": response})
-
-
-class APIGeolocation(APIClass):
-    def get(self, request) -> Dict[str, Any]:
-        """Perform geolocation on a given IP address."""
-        ip = request.GET.get("ip")
-        # TODO: Write this code here.
-        return {"country": "TBD", "city": "TBD"}
 
 
 class APITestResults(APIClass):
@@ -61,3 +68,21 @@ class LabViewSet(viewsets.ViewSet):
         queryset = Lab.objects.filter(**filters)
         serializer = LabSerializer(instance=queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class GeolocationViewSet(viewsets.ViewSet):
+    serializer_class = GeolocationSerializer
+
+    def list(self, request, **kwargs) -> Response:
+        """Perform geolocation on a given IP address."""
+        ip = self.request.query_params.get("ip")
+        validate_ip_address(ip)
+
+        query_params = {"ip": ip, "fields": "city,country_name"}
+        response = IpGeolocationClient().get_ip_geolocation(params=query_params)
+        data = response.json()
+        serializer = GeolocationSerializer(
+            data={"country": data.get("country_name"), "city": data.get("city")}
+        )
+        serializer.is_valid(raise_exception=True)
+        return Response(serializer.validated_data, status=status.HTTP_200_OK)

@@ -10,3 +10,8 @@ class LabSerializer(serializers.Serializer):
     country = serializers.CharField()
     email = serializers.CharField()
     number = serializers.CharField()
+
+
+class GeolocationSerializer(serializers.Serializer):
+    country = serializers.CharField()
+    city = serializers.CharField()

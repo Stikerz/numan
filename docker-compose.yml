@@ -17,6 +17,8 @@ services:
                done;
 
                sleep 1;
+               export IP_GEOLOCATION_API_KEY=${IP_GEOLOCATION_API_KEY}
+               export IP_GEOLOCATION_API_KEY=${IP_GEOLOCATION_API_KEY}
                ./manage.py migrate;
 
                while :;
