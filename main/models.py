@@ -30,6 +30,13 @@ class BloodTestResults(models.Model):
         help_text="Whether the results have come back from the lab yet.",
     )
 
+    lab = models.ForeignKey(
+        "Lab",
+        null=True,
+        blank=True,
+        on_delete=models.DO_NOTHING,
+    )
+
     class Meta:
         verbose_name_plural = "Blood test results"
 

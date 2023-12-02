@@ -1,16 +1,16 @@
 import ipaddress
-from typing import Any, Dict, List
+from typing import Dict, List
 
-from django.contrib.auth import get_user_model
-from django.http import HttpResponse, JsonResponse
-from django.shortcuts import render
-from django.views.generic import View
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, render
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 
 from .integrations.ip_geolocation import IpGeolocationClient
 from .models import BloodTestResults, Lab
-from .serializers import GeolocationSerializer, LabSerializer
+from .serializers import (BloodTestResultsModelSerializer,
+                          CreateBloodTestSerializer,
+                          GeolocationViewSetSerializer, LabViewSetSerializer)
 
 
 def validate_ip_address(ip_address: str = None):
@@ -26,30 +26,8 @@ def validate_ip_address(ip_address: str = None):
         )
 
 
-class APIClass(View):
-    """A parent class that makes it easier to write API views."""
-
-    def dispatch(self, request, *args, **kwargs) -> JsonResponse:
-        """Dispatch the request."""
-        # Assume that this user is the one we're authenticating as.
-        request.user = get_user_model().objects.all()[0]
-
-        # Route the request through the method.
-        response = super().dispatch(request, *args, **kwargs)
-
-        # If the response includes an error, set the proper status codes.
-        if "error" in response:
-            return JsonResponse(response, status=422)
-        else:
-            return JsonResponse({"data": response})
-
-
-class APITestResults(APIClass):
-    def get(self, request) -> List[Dict[str, Any]]:
-        """Return a list of blood test results for the current user."""
-        return [
-            btr.to_dict() for btr in BloodTestResults.objects.filter(user=request.user)
-        ]
+def convert_to_dict(lst: List) -> Dict[str, None]:
+    return {key: None for key in lst}
 
 
 def index(request) -> HttpResponse:
@@ -57,8 +35,35 @@ def index(request) -> HttpResponse:
     return render(request, "index.html")
 
 
+class BloodTestResultsViewSet(viewsets.ViewSet):
+    def list(self, request, **kwargs) -> Response:
+        """Return a list of blood test results for the current user."""
+
+        query = BloodTestResults.objects.filter(user=request.user)
+        serializer = BloodTestResultsModelSerializer(instance=query, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def create(self, request, **kwargs) -> Response:
+        """Create BloodTestResults for user"""
+
+        user = request.user
+        create_blood_serializer = CreateBloodTestSerializer(data=request.data)
+        create_blood_serializer.is_valid(raise_exception=True)
+        valid_data = create_blood_serializer.validated_data
+
+        lab = get_object_or_404(Lab, pk=valid_data.get("lab"))
+        data = {
+            "results": convert_to_dict(valid_data.get("blood_test")),
+            "user": user,
+            "lab": lab,
+        }
+        instance = BloodTestResults.objects.create(**data)
+        blood_test_model_serializer = BloodTestResultsModelSerializer(instance=instance)
+        return Response(blood_test_model_serializer.data, status=status.HTTP_200_OK)
+
+
 class LabViewSet(viewsets.ViewSet):
-    serializer_class = LabSerializer
+    serializer_class = LabViewSetSerializer
 
     def list(self, request, **kwargs):
         filters = {"country": kwargs.get("country")}
@@ -66,12 +71,12 @@ class LabViewSet(viewsets.ViewSet):
         if city:
             filters["city"] = city
         queryset = Lab.objects.filter(**filters)
-        serializer = LabSerializer(instance=queryset, many=True)
+        serializer = LabViewSetSerializer(instance=queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class GeolocationViewSet(viewsets.ViewSet):
-    serializer_class = GeolocationSerializer
+    serializer_class = GeolocationViewSetSerializer
 
     def list(self, request, **kwargs) -> Response:
         """Perform geolocation on a given IP address."""
@@ -81,7 +86,7 @@ class GeolocationViewSet(viewsets.ViewSet):
         query_params = {"ip": ip, "fields": "city,country_name"}
         response = IpGeolocationClient().get_ip_geolocation(params=query_params)
         data = response.json()
-        serializer = GeolocationSerializer(
+        serializer = GeolocationViewSetSerializer(
             data={"country": data.get("country_name"), "city": data.get("city")}
         )
         serializer.is_valid(raise_exception=True)

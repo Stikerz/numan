@@ -5,7 +5,11 @@ from . import views
 
 app_name = "main"
 urlpatterns = [
-    path("api/results/", views.APITestResults.as_view(), name="api-results"),
+    path(
+        "api/results/",
+        views.BloodTestResultsViewSet.as_view({"get": "list", "post": "create"}),
+        name="api-results",
+    ),
     path(
         "api/geolocation/",
         views.GeolocationViewSet.as_view({"get": "list"}),

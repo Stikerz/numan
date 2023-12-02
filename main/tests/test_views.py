@@ -3,49 +3,129 @@ from unittest.mock import Mock
 from urllib.parse import urljoin
 
 import pytest
-from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from ..models import BloodTestResults, Lab, User
-from .factories import LabFactory
+from ..models import BloodTestResults, Lab
+from .factories import BloodTestResultsFactory, LabFactory, UserFactory
 
 
-# Create your tests here.
-class SmokeTests(TestCase):
-    def setUp(self):
-        self.user = User.objects.create_user(username="tester")
-        self.user2 = User.objects.create_user(username="tester2")
-        self.blood_test_result = BloodTestResults.objects.create(
-            user=self.user,
-            results={
-                "values": {
+@pytest.fixture()
+def user() -> UserFactory:
+    return UserFactory()
+
+
+@pytest.fixture()
+def lab() -> LabFactory:
+    return LabFactory()
+
+
+def create_blood_test_results(**kwargs):
+    return BloodTestResultsFactory(**kwargs)
+
+
+@pytest.mark.django_db
+class TestBloodTestResultsViewSet:
+    client = APIClient()
+
+    @pytest.mark.parametrize(
+        ("results", "expected_status_code", "expected_results"),
+        [
+            (
+                {
                     "HDL": 87,
                     "LDL": 27,
-                    "CHL": 120,
-                    "SGR": 73,
-                }
-            },
-        )
-        self.blood_test_result2 = BloodTestResults.objects.create(
-            user=self.user2,
-            results={
-                "values": {
+                    "CBC": 120,
+                },
+                status.HTTP_200_OK,
+                {
+                    "HDL": 87,
+                    "LDL": 27,
+                    "CBC": 120,
+                },
+            ),
+            (
+                {
                     "HDL": 88,
                     "LDL": 28,
-                    "CHL": 121,
-                    "SGR": 74,
-                }
-            },
-        )
+                    "CBC": 121,
+                },
+                status.HTTP_200_OK,
+                {
+                    "HDL": 88,
+                    "LDL": 28,
+                    "CBC": 121,
+                },
+            ),
+        ],
+    )
+    def test_list_blood_test_results(
+        self, results, expected_results, expected_status_code, user
+    ):
+        create_blood_test_results(results=results, user=user)
 
-    def test_blood_test_results(self):
+        self.client.force_authenticate(user=user)
         response = self.client.get(reverse("main:api-results"))
-        self.assertEqual(response.status_code, 200)
-        c = json.loads(response.content)["data"]
-        self.assertEqual(len(c), 1)
-        self.assertEqual(c[0]["results"]["values"]["HDL"], 87)
+        data = response.json()
+
+        assert response.status_code == expected_status_code
+        assert data[0].get("results") == expected_results
+        assert data[0].get("user") == user.pk
+        assert len(data) == 1
+        assert BloodTestResults.objects.filter(user=user).count() == 1
+
+    @pytest.mark.parametrize(
+        ("test_types", "expected_status_code", "expected_results"),
+        [
+            (
+                ["HDL", "LDL", "CBC"],
+                status.HTTP_200_OK,
+                {
+                    "HDL": None,
+                    "LDL": None,
+                    "CBC": None,
+                },
+            ),
+            (
+                ["HDL"],
+                status.HTTP_200_OK,
+                {
+                    "HDL": None,
+                },
+            ),
+            (["UNSUPPORTED_TEST"], status.HTTP_400_BAD_REQUEST, None),
+        ],
+    )
+    def test_create_blood_test_results(
+        self, test_types, expected_results, expected_status_code, user, lab
+    ):
+        assert BloodTestResults.objects.filter(user=user).count() == 0
+        data = {"lab": lab.pk, "blood_test": test_types}
+        self.client.force_authenticate(user=user)
+        response = self.client.post(
+            reverse("main:api-results"),
+            data=json.dumps(data),
+            content_type="application/json",
+        )
+        data = response.json()
+
+        assert response.status_code == expected_status_code
+        if response.status_code == status.HTTP_200_OK:
+            assert data.get("results") == expected_results
+            assert data.get("user") == user.pk
+            assert data.get("lab") == lab.pk
+            assert BloodTestResults.objects.filter(user=user).count() == 1
+
+    def test_create_blood_test_results_invalid_lab_404(self):
+        data = {"lab": 4, "blood_test": ["HDL", "LDL", "CBC"]}
+        self.client.force_authenticate(user=user)
+        response = self.client.post(
+            reverse("main:api-results"),
+            data=json.dumps(data),
+            content_type="application/json",
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 @pytest.mark.django_db
