@@ -10,7 +10,7 @@ jobs:
     name: Django tests
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Run tests
         run: |
@@ -18,4 +18,4 @@ jobs:
           poetry install --no-root
           poetry run ./manage.py migrate
           poetry run ./manage.py loaddata initial_data.json
-          poetry run ./manage.py test
+          poetry run pytest
