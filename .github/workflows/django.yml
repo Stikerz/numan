@@ -18,4 +18,4 @@ jobs:
           poetry install --no-root
           poetry run ./manage.py migrate
           poetry run ./manage.py loaddata initial_data.json
-          poetry run ./manage.py test
+          poetry run pytest
