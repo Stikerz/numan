@@ -3,14 +3,18 @@ from typing import Dict, List
 
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
-from rest_framework import status, viewsets
+from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
 
+from .authentication import TokenAuthentication
 from .integrations.ip_geolocation import IpGeolocationClient
 from .models import BloodTestResults, Lab
-from .serializers import (BloodTestResultsModelSerializer,
-                          CreateBloodTestSerializer,
-                          GeolocationViewSetSerializer, LabViewSetSerializer)
+from .serializers import (
+    BloodTestResultsModelSerializer,
+    CreateBloodTestSerializer,
+    GeolocationViewSetSerializer,
+    LabViewSetSerializer,
+)
 
 
 def validate_ip_address(ip_address: str = None):
@@ -36,6 +40,9 @@ def index(request) -> HttpResponse:
 
 
 class BloodTestResultsViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+
     def list(self, request, **kwargs) -> Response:
         """Return a list of blood test results for the current user."""
 
@@ -63,7 +70,8 @@ class BloodTestResultsViewSet(viewsets.ViewSet):
 
 
 class LabViewSet(viewsets.ViewSet):
-    serializer_class = LabViewSetSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
 
     def list(self, request, **kwargs):
         filters = {"country": kwargs.get("country")}
@@ -76,7 +84,8 @@ class LabViewSet(viewsets.ViewSet):
 
 
 class GeolocationViewSet(viewsets.ViewSet):
-    serializer_class = GeolocationViewSetSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
 
     def list(self, request, **kwargs) -> Response:
         """Perform geolocation on a given IP address."""

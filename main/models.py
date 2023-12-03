@@ -3,13 +3,32 @@ from typing import Any, Dict
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import EmailValidator
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 from django_countries.fields import CountryField
+from rest_framework.authtoken.models import Token
 
 
 class User(AbstractUser):
     """The user."""
 
     pass
+
+
+class CustomToken(Token):
+    """Custom Token as the Token model that comes with DRF, has a One-to-One relationship to the user model,
+    so each user can only have one token"""
+
+    key = models.CharField(_("Key"), max_length=40, db_index=True, unique=True)
+    user = models.ForeignKey(
+        User,
+        related_name="auth_tokens",
+        on_delete=models.CASCADE,
+        verbose_name=_("User"),
+    )
+    name = models.CharField(max_length=64)
+
+    class Meta:
+        unique_together = (("user", "name"),)
 
 
 class BloodTestResults(models.Model):

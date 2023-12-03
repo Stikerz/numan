@@ -1,24 +1,24 @@
 """The main application's URLs."""
 from django.urls import path
 
-from . import views
+from . import viewsets
 
 app_name = "main"
 urlpatterns = [
     path(
         "api/results/",
-        views.BloodTestResultsViewSet.as_view({"get": "list", "post": "create"}),
+        viewsets.BloodTestResultsViewSet.as_view({"get": "list", "post": "create"}),
         name="api-results",
     ),
     path(
         "api/geolocation/",
-        views.GeolocationViewSet.as_view({"get": "list"}),
+        viewsets.GeolocationViewSet.as_view({"get": "list"}),
         name="api-geolocation",
     ),
-    path("", views.index, name="index"),
+    path("", viewsets.index, name="index"),
     path(
         "api/lab/<country>/",
-        views.LabViewSet.as_view({"get": "list"}),
+        viewsets.LabViewSet.as_view({"get": "list"}),
         name="api-lab",
     ),
 ]
