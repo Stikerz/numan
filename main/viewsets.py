@@ -74,10 +74,10 @@ class LabViewSet(viewsets.ViewSet):
     authentication_classes = [TokenAuthentication]
 
     def list(self, request, **kwargs):
-        filters = {"country": kwargs.get("country")}
+        filters = {"country": kwargs.get("country").upper()}
         city = self.request.query_params.get("city")
         if city:
-            filters["city"] = city
+            filters["city__iexact"] = city
         queryset = Lab.objects.filter(**filters)
         serializer = LabViewSetSerializer(instance=queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
