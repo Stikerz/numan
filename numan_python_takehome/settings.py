@@ -23,10 +23,11 @@ ALLOWED_HOSTS = ["*"]
 
 DEFAULT_FROM_EMAIL = "me@numan.com"
 
-IP_GEOLOCATION_API_KEY = os.environ.get("IP_GEOLOCATION_API_KEY", None)
-IP_GEOLOCATION_BASE_URL = os.environ.get(
-    "IP_GEOLOCATION_BASE_URL", "https://api.ipgeolocation.io"
+IP_GEOLOCATION_API_KEY = os.environ.get("IP_GEOLOCATION_API_KEY")
+IP_GEOLOCATION_BASE_URL = (
+    os.environ.get("IP_GEOLOCATION_BASE_URL") or "https://api.ipgeolocation.io"
 )
+
 
 # Application definition
 

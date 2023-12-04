@@ -93,8 +93,8 @@ class GeolocationViewSet(viewsets.ViewSet):
         validate_ip_address(ip)
 
         query_params = {"ip": ip, "fields": "city,country_name"}
-        response = IpGeolocationClient().get_ip_geolocation(params=query_params)
-        data = response.json()
+        data = IpGeolocationClient().get_ip_geolocation(params=query_params)
+
         serializer = GeolocationViewSetSerializer(
             data={"country": data.get("country_name"), "city": data.get("city")}
         )

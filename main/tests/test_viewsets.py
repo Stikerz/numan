@@ -1,5 +1,4 @@
 import json
-from unittest.mock import Mock
 from urllib.parse import urljoin
 
 import pytest
@@ -299,12 +298,10 @@ class TestGeolocationViewSet:
     def test_geolocation(
         self, mocker, expected_status_code, mock_return_value, client, user
     ):
-        mock = Mock()
-        mock.json.return_value = mock_return_value
         mocker.patch(
-            "main.viewsets.IpGeolocationClient.get_ip_geolocation", return_value=mock
+            "main.viewsets.IpGeolocationClient.get_ip_geolocation",
+            return_value=mock_return_value,
         )
-
         client.force_authenticate(user=user)
         response = client.get(
             urljoin(reverse("main:api-geolocation"), "?ip=192.168.2.10")
@@ -316,10 +313,9 @@ class TestGeolocationViewSet:
             assert data.get("country") == "USA"
 
     def test_geolocation_viewset_auth(self, mocker, client, user):
-        mock = Mock()
-        mock.json.return_value = {"country_name": "USA", "city": "Rocky Mount"}
         mocker.patch(
-            "main.viewsets.IpGeolocationClient.get_ip_geolocation", return_value=mock
+            "main.viewsets.IpGeolocationClient.get_ip_geolocation",
+            return_value={"country_name": "USA", "city": "Rocky Mount"},
         )
         token = create_token(user=user, name="token1")
         client.credentials(HTTP_AUTHORIZATION=f"Token {token}")
