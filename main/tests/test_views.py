@@ -252,10 +252,9 @@ class TestGeolocationViewSet:
         ],
     )
     def test_geolocation(self, mocker, expected_status_code, mock_return_value):
-        mock = Mock()
-        mock.json.return_value = mock_return_value
         mocker.patch(
-            "main.views.IpGeolocationClient.get_ip_geolocation", return_value=mock
+            "main.views.IpGeolocationClient.get_ip_geolocation",
+            return_value=mock_return_value,
         )
 
         response = self.client.get(
