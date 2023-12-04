@@ -8,9 +8,12 @@ from rest_framework.response import Response
 
 from .integrations.ip_geolocation import IpGeolocationClient
 from .models import BloodTestResults, Lab
-from .serializers import (BloodTestResultsModelSerializer,
-                          CreateBloodTestSerializer,
-                          GeolocationViewSetSerializer, LabViewSetSerializer)
+from .serializers import (
+    BloodTestResultsModelSerializer,
+    CreateBloodTestSerializer,
+    GeolocationViewSetSerializer,
+    LabViewSetSerializer,
+)
 
 
 def validate_ip_address(ip_address: str = None):
